@@ -31,6 +31,7 @@ the same hook, and local jobs run first.
 | Rule | Hook | What it rejects |
 | --- | --- | --- |
 | `rules/no-ai-attribution.yml` | `commit-msg` | Agent-attribution trailers and footers: `Co-Authored-By: Claude`, `Claude-Session:`, a `claude.ai/code/session_…` URL, `Generated with Claude Code`, and the same forms for ChatGPT, Copilot, Codex, Cursor, Devin, Gemini and Aider. |
+| `rules/no-shell-quoting-leak.yml` | `commit-msg` | A PowerShell here-string delimiter that leaked into the message because the wrong shell dialect was used: a line that is only `@`, `@'` or `@"`, an opener glued to the subject, or a closer at the end of a line. |
 
 ## Versions
 

@@ -1,0 +1,8 @@
+fix(masters): give placeholders unique default objectName
+
+Placeholders now default their objectName to the declared name, then the
+placeholder type. A master with two text placeholders no longer emits
+duplicate Selection Pane identities.
+# @
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.

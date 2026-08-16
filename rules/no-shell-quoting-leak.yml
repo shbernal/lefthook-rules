@@ -1,0 +1,63 @@
+# no-shell-quoting-leak — reject a here-string delimiter that leaked into a
+# commit message.
+#
+# An agent on Windows has both a POSIX shell and PowerShell available, and the
+# two disagree on multi-line quoting: `<<'EOF'` against `@'…'@`. Picking the
+# wrong dialect for the tool being called does not error. The delimiter is
+# passed through as text and lands in the message, usually as a bare `@` on the
+# first line, sometimes as a second one on the last. The fix is to keep the
+# message off the command line: write it to a file and run
+# `git commit -F <file>`.
+#
+# Two invariants this file must keep (see AGENTS.md):
+#
+#   - The job name matches the file stem. Jobs from every config in a consumer's
+#     `configs:` list land in one hook's job list, so names must not collide.
+#   - The check is self-contained shell. A remote job runs with the working
+#     directory set to the CONSUMER's repo root, so nothing else in this repo is
+#     reachable from here — no helper script, no `source_dir`.
+#
+# `{1}` is the commit-message file path that git passes to a commit-msg hook.
+#
+# The same two filters as no-ai-attribution run before grep, for the same
+# reasons: sed truncates at the `git commit -v` scissors line, so a diff that
+# ADDS or REMOVES a delimiter is not read as one; git stripspace drops the `#`
+# comment lines git adds.
+#
+# The pattern is three alternatives, and each one is anchored:
+#
+#   1. `^@['"]?[[:space:]]*$` — a line that is only `@`, `@'` or `@"`. This is
+#      the observed damage. The anchor takes no leading whitespace on purpose:
+#      every line of a verbose diff carries a ` `, `+` or `-` prefix, so a bare
+#      `@` quoted inside a diff cannot reach this.
+#   2. `^@['"]` — an opener glued to the first words of the subject.
+#   3. `['"]@[[:space:]]*$` — a closer at the end of any line.
+#
+# Two forms are deliberately absent. A leading backtick is a code span far more
+# often than a quoting slip: three commits in one consuming repo open with one,
+# and no mangled commit ever has. A bare `EOF` line is prose in a message that
+# quotes a shell snippet; the POSIX form only leaks in the other direction, and
+# PowerShell rejects `<<` outright rather than passing it through, so that
+# direction fails loudly and needs no rule.
+commit-msg:
+  jobs:
+    - name: no-shell-quoting-leak
+      run: |
+        if sed '/^#[[:space:]]*-\{8,\}[[:space:]]*>8[[:space:]]*-\{8,\}/q' {1} \
+          | git stripspace --strip-comments \
+          | grep -qE '^@['\''"]?[[:space:]]*$|^@['\''"]|['\''"]@[[:space:]]*$'; then
+          echo "no-shell-quoting-leak: a here-string delimiter leaked into the message." >&2
+          echo "" >&2
+          echo "  PowerShell quotes a multi-line string with @'...'@ and a POSIX shell" >&2
+          echo "  with <<'EOF'. The wrong dialect does not error — the delimiter is" >&2
+          echo "  passed through as text and lands in the commit message." >&2
+          echo "" >&2
+          echo "  Write the message to a file and commit it with:" >&2
+          echo "    git commit -F <file>" >&2
+          echo "" >&2
+          echo "  Bypass once, if you must: git commit --no-verify" >&2
+          exit 1
+        fi
+      skip:
+        - merge
+        - rebase

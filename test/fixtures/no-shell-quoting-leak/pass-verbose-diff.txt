@@ -1,0 +1,16 @@
+test(hooks): add a fixture for the leaked closer
+
+The verbose diff below carries lines that the rule would reject on their own.
+The scissors truncation is what keeps them out of the scan.
+# ------------------------ >8 ------------------------
+# Do not modify or remove the line above.
+# Everything below it will be ignored.
+diff --git a/test/fixtures/no-shell-quoting-leak/fail-closer-glued.txt b/test/fixtures/no-shell-quoting-leak/fail-closer-glued.txt
+new file mode 100644
+index 0000000..1111111
+--- /dev/null
++++ b/test/fixtures/no-shell-quoting-leak/fail-closer-glued.txt
+@@ -0,0 +1,3 @@
++fix(test): resolve OOXML validator CLI binary on Windows
++
++release ships on Windows, so isInstalled() was always false there.'@

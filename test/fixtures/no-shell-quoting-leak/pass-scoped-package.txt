@@ -1,0 +1,4 @@
+@types/node: bump to 24.9 and drop the local Buffer shim
+
+A subject may open with a scoped package name. The rule reads a leading `@`
+as damage only when the whole line is one, or when a quote follows it.

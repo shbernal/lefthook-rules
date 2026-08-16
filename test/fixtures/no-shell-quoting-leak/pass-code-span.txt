@@ -1,0 +1,4 @@
+`outputType` arg added to `save` function, now any of the jszip supported types can be used
+
+A subject may open with a code span. Three commits in one consuming repo do,
+and no mangled commit ever has.

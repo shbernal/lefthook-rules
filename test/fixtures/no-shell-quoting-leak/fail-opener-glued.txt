@@ -1,0 +1,4 @@
+@'fix(masters): give placeholders unique default objectName
+
+Placeholders now default their objectName to the declared name, yielding
+unique, meaningful identities in the Selection Pane.

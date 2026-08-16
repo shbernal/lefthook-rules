@@ -1,0 +1,6 @@
+docs: record why commit messages go through a file
+
+PowerShell quotes a multi-line string with @'...'@ and a POSIX shell with
+<<'EOF'. Naming the delimiter mid-line is prose about the failure, not the
+failure. Only a line that ends with the closer is damage.
+EOF

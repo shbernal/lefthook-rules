@@ -1,0 +1,6 @@
+@
+fix(gen-charts): assign chart part filenames from a per-presentation counter
+
+`_chartCounter` was a never-reset module global incremented in
+`addChartDefinition`, so two identical, independent presentations built in one
+process emitted different chart part filenames.

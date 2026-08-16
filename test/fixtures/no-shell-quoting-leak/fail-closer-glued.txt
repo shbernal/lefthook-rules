@@ -1,0 +1,4 @@
+fix(test): resolve OOXML validator CLI binary on Windows
+
+The validator path hard-coded the name without the .exe suffix the upstream
+release ships on Windows, so isInstalled() was always false there.'@

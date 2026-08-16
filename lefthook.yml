@@ -5,6 +5,7 @@
 # same files. Both merge into the hook's job list the same way.
 extends:
   - rules/no-ai-attribution.yml
+  - rules/no-shell-quoting-leak.yml
 
 pre-push:
   jobs:

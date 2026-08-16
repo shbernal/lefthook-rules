@@ -1,0 +1,6 @@
+@
+chore: normalize line endings to LF via .gitattributes
+
+Add .gitattributes so text files are LF in the repo and in every working
+tree, independent of each contributor core.autocrlf.
+@
