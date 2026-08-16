@@ -1,0 +1,9 @@
+Remove the attribution footer from the template
+
+# Please enter the commit message for your changes. Lines starting
+# with '#' will be ignored, and an empty message aborts the commit.
+# ------------------------ >8 ------------------------
+diff --git a/.github/pull_request_template.md b/.github/pull_request_template.md
+--- a/.github/pull_request_template.md
++++ b/.github/pull_request_template.md
+-Co-Authored-By: Claude <noreply@anthropic.com>

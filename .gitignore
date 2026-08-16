@@ -1,0 +1,8 @@
+# Per-machine lefthook overrides, never shared.
+lefthook-local.yml
+.lefthook-local/
+
+# Nothing here is built. These are the strays a shell leaves behind.
+.DS_Store
+*.tmp
+__pycache__/

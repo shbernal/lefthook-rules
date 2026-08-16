@@ -1,0 +1,3 @@
+Describe the AI feature flag
+
+The flag was generated with a script and is documented in docs/flags.md.

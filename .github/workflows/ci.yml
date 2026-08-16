@@ -1,0 +1,25 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+
+      # The npm package fetches the platform binary in its postinstall step.
+      - run: npm install --global lefthook@2
+
+      - run: lefthook version
+
+      # Every rule's YAML has to parse before the runner can read a command out
+      # of it, so this is a strict subset of what test/run.sh covers. It is here
+      # for the clearer failure message on a malformed rule.
+      - run: lefthook validate
+
+      - run: test/run.sh

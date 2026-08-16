@@ -1,0 +1,3 @@
+Add the parser for section zoom
+
+The reader now resolves the relationship before it walks the shape tree.

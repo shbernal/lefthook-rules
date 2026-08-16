@@ -1,0 +1,12 @@
+# This repo runs its own rules on itself. A rule that cannot pass here is not
+# ready to ship to every other repo.
+#
+# `extends:` reads a local path; `remotes:` is how other projects consume these
+# same files. Both merge into the hook's job list the same way.
+extends:
+  - rules/no-ai-attribution.yml
+
+pre-push:
+  jobs:
+    - name: test
+      run: test/run.sh

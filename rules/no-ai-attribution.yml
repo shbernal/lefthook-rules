@@ -1,0 +1,43 @@
+# no-ai-attribution — reject agent-attribution text in a commit message.
+#
+# A commit message holds the subject and the prose that explains the change. It
+# says nothing about the tool that wrote it. This rule rejects the trailers and
+# footers coding agents append by default.
+#
+# Two invariants this file must keep (see AGENTS.md):
+#
+#   - The job name matches the file stem. Jobs from every config in a consumer's
+#     `configs:` list land in one hook's job list, so names must not collide.
+#   - The check is self-contained shell. A remote job runs with the working
+#     directory set to the CONSUMER's repo root, so nothing else in this repo is
+#     reachable from here — no helper script, no `source_dir`.
+#
+# `{1}` is the commit-message file path that git passes to a commit-msg hook.
+#
+# Two filters run before grep, and both are load-bearing:
+#
+#   - sed truncates the message at the `git commit -v` scissors line. The verbose
+#     diff sits in that same file with no `#` prefix, so a commit whose diff
+#     REMOVES an attribution line would otherwise be rejected.
+#   - git stripspace drops the `#` comment lines git adds.
+#
+# The pair costs about 0.7 ms. The whole job is about 3 ms, against about 19 ms
+# for the same check written as a Node script.
+commit-msg:
+  jobs:
+    - name: no-ai-attribution
+      run: |
+        if sed '/^#[[:space:]]*-\{8,\}[[:space:]]*>8[[:space:]]*-\{8,\}/q' {1} \
+          | git stripspace --strip-comments \
+          | grep -qiE 'co-authored-by:[[:space:]]*(claude|chatgpt|openai|anthropic|copilot|codex|cursor|devin|gemini|aider)|noreply@(anthropic|openai)\.com|(claude|chatgpt)\.ai/|^(claude|codex|copilot)-session:|generated (with|by) (claude|chatgpt|copilot|codex|cursor|gemini)'; then
+          echo "no-ai-attribution: the commit message names the tool that wrote the change." >&2
+          echo "" >&2
+          echo "  A commit message is the subject and the prose explaining the change." >&2
+          echo "  Remove the attribution trailer or footer, then commit again." >&2
+          echo "" >&2
+          echo "  Bypass once, if you must: git commit --no-verify" >&2
+          exit 1
+        fi
+      skip:
+        - merge
+        - rebase
