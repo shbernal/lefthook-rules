@@ -40,18 +40,26 @@
 # PowerShell rejects `<<` outright rather than passing it through, so that
 # direction fails loudly and needs no rule.
 #
-# The `"` inside the bracket expressions is regex, not shell quoting: the pattern
-# has to match a literal double quote, because `@"` is one of the two forms
-# PowerShell accepts. The whole pattern is single-quoted, so the shell never
-# reads it. `'\''` is the one place this file has to escape anything, and it is
-# unavoidable — a single-quoted string cannot contain a single quote.
+# The pattern needs to match a literal double quote, because `@"` is one of the
+# two forms PowerShell accepts — but this script may not contain one. On Windows
+# lefthook runs a job as
 #
-# The refusal is a here-doc with a quoted delimiter, not a run of `echo "…"`.
-# Inside double quotes a shell still expands `$`, a backtick and a backslash, so
-# message text would be one careless character away from running something on a
-# consumer's machine. `<<'MSG'` expands nothing, and this message in particular
-# is full of the quotes it is explaining. Its body sits at column 0 because that
-# is where the block scalar's indentation puts it; the delimiter must match.
+#     "C:\Program Files\Git\bin\sh.exe" -c "<the whole script>"
+#
+# and it escapes nothing in between. The first `"` in a rule closes that
+# argument, whatever it was quoting locally, and sh gets a truncated script. So
+# the two quote characters come out of `printf` instead: \47 is `'` and \42 is
+# `"`. `$quotes` goes into the pattern unquoted, which is safe because neither
+# character splits a field or globs, and every other part of the pattern stays in
+# single quotes.
+#
+# For the same reason the refusal is a here-doc with a quoted delimiter rather
+# than a run of `echo "…"`. That also expands nothing — no `$`, no backtick, no
+# backslash — which suits a message that is mostly punctuation. Its body sits at
+# column 0 because that is where the block scalar's indentation puts it; the
+# delimiter must match. Nothing in it may be a double quote either, which is why
+# it names the PowerShell form as `@'...'@` and leaves `@"..."@` to the prose
+# above.
 #
 # The first line names the rule, and the last tells the user how to bypass. Jobs
 # from every config a consumer lists land in one hook's output, so a refusal that
@@ -61,9 +69,10 @@ commit-msg:
   jobs:
     - name: no-shell-quoting-leak
       run: |
+        quotes=$(printf '\47\42')
         if sed '/^#[[:space:]]*-\{8,\}[[:space:]]*>8[[:space:]]*-\{8,\}/q' {1} \
           | git stripspace --strip-comments \
-          | grep -qE '^@['\''"]?[[:space:]]*$|^@['\''"]|['\''"]@[[:space:]]*$'; then
+          | grep -qE '^@['$quotes']?[[:space:]]*$|^@['$quotes']|['$quotes']@[[:space:]]*$'; then
           cat >&2 <<'MSG'
         no-shell-quoting-leak: a here-string delimiter leaked into the message.
 

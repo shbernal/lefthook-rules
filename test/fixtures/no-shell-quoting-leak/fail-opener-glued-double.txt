@@ -1,0 +1,4 @@
+@"feat(charts): carry the series colour through to the legend
+
+The legend read its swatch from the theme rather than from the series, so a
+per-series override showed the right bar above the wrong key.

@@ -70,6 +70,21 @@ for rule_file in "$root"/rules/*.yml; do
 		continue
 	fi
 
+	# A rule that holds a double quote anywhere is broken on Windows, and it is
+	# broken in a way no fixture can catch here: lefthook runs a job as
+	# `sh.exe -c "<the whole script>"` and escapes nothing in between, so the
+	# first `"` closes that argument and sh gets a truncated script. Under `sh`
+	# on this machine the same rule passes. Only this check stands between a
+	# stray quote and a consumer on Windows.
+	for entry in "${jobs[@]}"; do
+		job=${entry%%$'\t'*}
+		checks=$((checks + 1))
+		case $(printf '%s' "${entry#*$'\t'}" | base64 -d) in
+		*'"'*) report_failure "$rule/$job: the command holds a double quote, which truncates it on Windows" ;;
+		*) echo "  ok    $job holds no double quote" ;;
+		esac
+	done
+
 	# Both directions have to be covered. A rule with only fail- fixtures proves
 	# it rejects something and nothing about what it lets through.
 	for prefix in pass fail; do

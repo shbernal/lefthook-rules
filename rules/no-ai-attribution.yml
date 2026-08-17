@@ -25,12 +25,12 @@
 # for the same check written as a Node script.
 #
 # The refusal is a here-doc with a quoted delimiter, not a run of `echo "…"`.
-# Inside double quotes a shell still expands `$`, a backtick and a backslash, so
-# message text would be one careless character away from running something on a
-# consumer's machine. `<<'MSG'` expands nothing, needs no escaping for the
-# apostrophes and quotes the text itself contains, and keeps the message
-# readable as the block of prose it is. Its body sits at column 0 because that is
-# where the block scalar's indentation puts it; the delimiter must match.
+# This script may not contain a double quote at all: on Windows lefthook runs a
+# job as `sh.exe -c "<the whole script>"` and escapes nothing in between, so the
+# first `"` closes that argument and sh gets a truncated script. `<<'MSG'` needs
+# no quoting and expands nothing, which also keeps the message readable as the
+# block of prose it is. Its body sits at column 0 because that is where the block
+# scalar's indentation puts it; the delimiter must match.
 #
 # The first line names the rule, and the last tells the user how to bypass. Jobs
 # from every config a consumer lists land in one hook's output, so a refusal that

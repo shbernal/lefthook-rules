@@ -1,0 +1,4 @@
+docs(remotes): explain what refetch_frequency does to a cached config
+
+Without it the cached copy is permanent, so a fix to a shared rule never
+reaches the project that pinned it."@

@@ -49,14 +49,25 @@ Inline shell is also the fast form. Measured on a commit-msg check: about 3 ms
 for `sed | git stripspace | grep`, against about 19 ms for the same logic as a
 Node script, against about 26 ms for lefthook's own startup.
 
-**A rule's shell holds no double quotes.** Inside double quotes a shell still
-expands `$`, a backtick and a backslash, and a rule's text is full of the
-punctuation that trips them. Patterns go in single quotes, refusal text goes in a
-`<<'MSG'` here-doc with a quoted delimiter — that expands nothing and needs no
-escaping. The one place a `"` may appear is inside a regex, where it is a
-character to match rather than a quote; say so in a comment. `'\''` is the only
-escape any rule should need, and only when a single-quoted pattern must contain a
-single quote.
+**A rule's shell holds no double quote. Not one, anywhere.** Not as quoting, not
+inside a regex, not in the refusal text. On Windows lefthook runs a job as
+
+```
+"C:\Program Files\Git\bin\sh.exe" -c "<the whole script>"
+```
+
+and escapes nothing in between ([exec_windows.go][exec-windows]). The first `"`
+in a rule closes that argument, so sh gets a truncated script and the rule fails
+with a syntax error on every commit. Under `sh` on Linux or macOS the same rule
+is fine, which is what makes this worth a written invariant.
+
+So: patterns go in single quotes, and refusal text goes in a `<<'MSG'` here-doc
+with a quoted delimiter, which expands nothing and needs no escaping. Where a
+pattern genuinely has to match a quote character, spell it with `printf` —
+`quotes=$(printf '\47\42')` — and interpolate it unquoted; neither character
+splits a field or globs. `test/run.sh` fails any rule whose command holds a `"`.
+
+[exec-windows]: https://github.com/evilmartians/lefthook/blob/v2.1.10/internal/run/controller/exec/exec_windows.go
 
 **A refusal names its rule and says how to bypass.** Jobs from every config a
 consumer lists print into one stream, so a rule opens a line with its own name:
