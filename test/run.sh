@@ -11,6 +11,12 @@
 # a rule is tested exactly as lefthook would run it — and a rule whose YAML does
 # not parse fails here rather than in a consumer.
 #
+# An exit status alone is a weak assertion. A rule that rejects a message but
+# prints nothing useful has failed the person committing, and a quoting mistake
+# in the refusal text mangles the message while leaving the status at 1. So a
+# rejection is also checked against the contract every rule keeps: the first line
+# names the rule, and the text says how to bypass.
+#
 # Usage:  test/run.sh
 #         LEFTHOOK_BIN=/path/to/lefthook test/run.sh
 set -euo pipefail
@@ -18,8 +24,19 @@ set -euo pipefail
 root=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 bin=${LEFTHOOK_BIN:-lefthook}
 
+# shellcheck source=test/lib.sh
+. "$root/test/lib.sh"
+
 if ! command -v "$bin" >/dev/null 2>&1 && [ ! -x "$bin" ]; then
 	echo "test/run.sh: lefthook not found. Install it, or set LEFTHOOK_BIN." >&2
+	exit 2
+fi
+
+# Git Bash on Windows has no `python3`, only whatever the runner put on PATH.
+python=python3
+command -v "$python" >/dev/null 2>&1 || python=python
+if ! command -v "$python" >/dev/null 2>&1; then
+	echo "test/run.sh: no python3 or python on PATH." >&2
 	exit 2
 fi
 
@@ -46,7 +63,7 @@ for rule_file in "$root"/rules/*.yml; do
 	jobs=()
 	while IFS= read -r line; do
 		jobs+=("$line")
-	done < <(LEFTHOOK_CONFIG="$rule_file" "$bin" dump --format json | python3 "$root/test/extract-jobs.py")
+	done < <(LEFTHOOK_CONFIG="$rule_file" "$bin" dump --format json | "$python" "$root/test/extract-jobs.py")
 
 	if [ ${#jobs[@]} -eq 0 ]; then
 		report_failure "$rule: the config defines no job with a run command"
@@ -86,6 +103,9 @@ for rule_file in "$root"/rules/*.yml; do
 				[ -n "$output" ] && echo "$output" | sed 's/^/          /' >&2
 			elif [ "$accept" = false ] && [ "$status" -eq 0 ]; then
 				report_failure "$rule/$job on $name: accepted a message it should reject"
+			elif [ "$accept" = false ] && ! problem=$(refusal_problem "$rule" "$output"); then
+				report_failure "$rule/$job on $name: $problem"
+				echo "$output" | sed 's/^/          /' >&2
 			else
 				echo "  ok    $job on $name"
 			fi

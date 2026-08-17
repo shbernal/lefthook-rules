@@ -1,0 +1,7 @@
+# LF in the working tree on every platform, Windows included.
+#
+# Two things here break on CRLF. A shell script with CRLF line endings fails on
+# the shebang line before it runs anything, and a fixture with CRLF is not the
+# commit message the rule was written against — git writes LF into
+# .git/COMMIT_EDITMSG, so a CRLF fixture would test a message no rule ever sees.
+* text=auto eol=lf

@@ -11,3 +11,6 @@ pre-push:
   jobs:
     - name: test
       run: test/run.sh
+
+    - name: smoke
+      run: test/smoke.sh

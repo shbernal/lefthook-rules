@@ -39,6 +39,24 @@
 # quotes a shell snippet; the POSIX form only leaks in the other direction, and
 # PowerShell rejects `<<` outright rather than passing it through, so that
 # direction fails loudly and needs no rule.
+#
+# The `"` inside the bracket expressions is regex, not shell quoting: the pattern
+# has to match a literal double quote, because `@"` is one of the two forms
+# PowerShell accepts. The whole pattern is single-quoted, so the shell never
+# reads it. `'\''` is the one place this file has to escape anything, and it is
+# unavoidable — a single-quoted string cannot contain a single quote.
+#
+# The refusal is a here-doc with a quoted delimiter, not a run of `echo "…"`.
+# Inside double quotes a shell still expands `$`, a backtick and a backslash, so
+# message text would be one careless character away from running something on a
+# consumer's machine. `<<'MSG'` expands nothing, and this message in particular
+# is full of the quotes it is explaining. Its body sits at column 0 because that
+# is where the block scalar's indentation puts it; the delimiter must match.
+#
+# The first line names the rule, and the last tells the user how to bypass. Jobs
+# from every config a consumer lists land in one hook's output, so a refusal that
+# did not name itself would be an anonymous wall of text. test/run.sh asserts
+# both.
 commit-msg:
   jobs:
     - name: no-shell-quoting-leak
@@ -46,16 +64,18 @@ commit-msg:
         if sed '/^#[[:space:]]*-\{8,\}[[:space:]]*>8[[:space:]]*-\{8,\}/q' {1} \
           | git stripspace --strip-comments \
           | grep -qE '^@['\''"]?[[:space:]]*$|^@['\''"]|['\''"]@[[:space:]]*$'; then
-          echo "no-shell-quoting-leak: a here-string delimiter leaked into the message." >&2
-          echo "" >&2
-          echo "  PowerShell quotes a multi-line string with @'...'@ and a POSIX shell" >&2
-          echo "  with <<'EOF'. The wrong dialect does not error — the delimiter is" >&2
-          echo "  passed through as text and lands in the commit message." >&2
-          echo "" >&2
-          echo "  Write the message to a file and commit it with:" >&2
-          echo "    git commit -F <file>" >&2
-          echo "" >&2
-          echo "  Bypass once, if you must: git commit --no-verify" >&2
+          cat >&2 <<'MSG'
+        no-shell-quoting-leak: a here-string delimiter leaked into the message.
+
+          PowerShell quotes a multi-line string with @'...'@ and a POSIX shell
+          with <<'EOF'. The wrong dialect does not error — the delimiter is
+          passed through as text and lands in the commit message.
+
+          Write the message to a file and commit it with:
+            git commit -F <file>
+
+          Bypass once, if you must: git commit --no-verify
+        MSG
           exit 1
         fi
       skip:

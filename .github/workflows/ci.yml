@@ -8,7 +8,20 @@ on:
 
 jobs:
   test:
-    runs-on: ubuntu-latest
+    # A rule is shell, and it runs on whatever machine a consumer commits from.
+    # The interesting difference between those machines is the shell: Windows
+    # puts Git Bash and lefthook's Windows executor between the rule file and the
+    # person committing, and a quoting or line-ending mistake surfaces there and
+    # nowhere else. That is the failure this matrix exists to catch, so the two
+    # legs run independently — a Windows-only break should still report as one.
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
     steps:
       - uses: actions/checkout@v5
 
@@ -22,4 +35,8 @@ jobs:
       # for the clearer failure message on a malformed rule.
       - run: lefthook validate
 
-      - run: test/run.sh
+      # `bash …` rather than `./…`: a Windows checkout does not reliably carry
+      # the executable bit.
+      - run: bash test/run.sh
+
+      - run: bash test/smoke.sh

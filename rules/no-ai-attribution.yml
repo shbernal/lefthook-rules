@@ -23,6 +23,19 @@
 #
 # The pair costs about 0.7 ms. The whole job is about 3 ms, against about 19 ms
 # for the same check written as a Node script.
+#
+# The refusal is a here-doc with a quoted delimiter, not a run of `echo "…"`.
+# Inside double quotes a shell still expands `$`, a backtick and a backslash, so
+# message text would be one careless character away from running something on a
+# consumer's machine. `<<'MSG'` expands nothing, needs no escaping for the
+# apostrophes and quotes the text itself contains, and keeps the message
+# readable as the block of prose it is. Its body sits at column 0 because that is
+# where the block scalar's indentation puts it; the delimiter must match.
+#
+# The first line names the rule, and the last tells the user how to bypass. Jobs
+# from every config a consumer lists land in one hook's output, so a refusal that
+# did not name itself would be an anonymous wall of text. test/run.sh asserts
+# both.
 commit-msg:
   jobs:
     - name: no-ai-attribution
@@ -30,12 +43,14 @@ commit-msg:
         if sed '/^#[[:space:]]*-\{8,\}[[:space:]]*>8[[:space:]]*-\{8,\}/q' {1} \
           | git stripspace --strip-comments \
           | grep -qiE 'co-authored-by:[[:space:]]*(claude|chatgpt|openai|anthropic|copilot|codex|cursor|devin|gemini|aider)|noreply@(anthropic|openai)\.com|(claude|chatgpt)\.ai/|^(claude|codex|copilot)-session:|generated (with|by) (claude|chatgpt|copilot|codex|cursor|gemini)'; then
-          echo "no-ai-attribution: the commit message names the tool that wrote the change." >&2
-          echo "" >&2
-          echo "  A commit message is the subject and the prose explaining the change." >&2
-          echo "  Remove the attribution trailer or footer, then commit again." >&2
-          echo "" >&2
-          echo "  Bypass once, if you must: git commit --no-verify" >&2
+          cat >&2 <<'MSG'
+        no-ai-attribution: the commit message names the tool that wrote the change.
+
+          A commit message is the subject and the prose explaining the change.
+          Remove the attribution trailer or footer, then commit again.
+
+          Bypass once, if you must: git commit --no-verify
+        MSG
           exit 1
         fi
       skip:

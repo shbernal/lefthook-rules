@@ -51,13 +51,21 @@ fix never reaches a project.
 ## Test
 
 ```sh
-test/run.sh
+test/run.sh      # every rule against every fixture message
+test/smoke.sh    # one real commit per rule, through an installed hook
 ```
 
 Each rule carries fixture messages under `test/fixtures/<rule>/`. `pass-*.txt`
-must be accepted and `fail-*.txt` must be rejected. The runner reads each rule
+must be accepted and `fail-*.txt` must be rejected. `test/run.sh` reads each rule
 through `lefthook dump`, so it tests the command lefthook would run rather than a
-copy of it. GitHub Actions runs the same script on every push.
+copy of it.
+
+`test/smoke.sh` covers what that cannot see. It installs the rules in a throwaway
+repo, runs a real `git commit`, and reads the refusal back off git's stderr — so
+it exercises the config merge, the installed hook and the platform's shell as
+well as the rule. Both scripts check the refusal text, not only the exit status.
+
+GitHub Actions runs both on `ubuntu-latest` and `windows-latest` on every push.
 
 ## Add a rule
 
