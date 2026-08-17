@@ -9,6 +9,11 @@ import base64
 import json
 import sys
 
+# Python writes \r\n on Windows. The caller reads these lines with `read` and
+# feeds the second field to `base64 -d`, which rejects a stray \r as invalid
+# input, so the translation has to be off.
+sys.stdout.reconfigure(newline="\n")
+
 config = json.load(sys.stdin)
 
 for hook, body in config.items():
