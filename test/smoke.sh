@@ -96,15 +96,23 @@ for rule_file in "$root"/rules/*.yml; do
 	fixtures="$root/test/fixtures/$rule"
 	echo "$rule"
 
-	# `pass-plain.txt` by preference: every rule is installed for every commit
-	# here, so the good message has to be one that no other rule objects to
-	# either.
-	pass_fixture=$fixtures/pass-plain.txt
-	if [ ! -f "$pass_fixture" ]; then
-		pass_fixture=""
+	# Named rather than globbed: every rule is installed for every commit here, so
+	# a good message has to be one that no other rule objects to either.
+	#
+	# `pass-verbose-diff.txt` earns its place next to the plain one. It is the
+	# only fixture that reaches the `sed` truncating the message at the scissors
+	# line, and that expression is where a rule's backslashes live. Backslash and
+	# double quote are the two characters lefthook's Windows command line can
+	# swallow, so the one construct still holding backslashes gets walked through
+	# the real hook rather than reasoned about.
+	pass_fixtures=()
+	for name in pass-plain.txt pass-verbose-diff.txt; do
+		[ -f "$fixtures/$name" ] && pass_fixtures+=("$fixtures/$name")
+	done
+	if [ ${#pass_fixtures[@]} -eq 0 ]; then
 		for fixture in "$fixtures"/pass-*.txt; do
 			[ -f "$fixture" ] || continue
-			pass_fixture=$fixture
+			pass_fixtures=("$fixture")
 			break
 		done
 	fi
@@ -116,7 +124,7 @@ for rule_file in "$root"/rules/*.yml; do
 		break
 	done
 
-	if [ -z "$fail_fixture" ] || [ -z "$pass_fixture" ]; then
+	if [ -z "$fail_fixture" ] || [ ${#pass_fixtures[@]} -eq 0 ]; then
 		report_failure "$rule: no fixture to smoke test with"
 		continue
 	fi
@@ -133,14 +141,16 @@ for rule_file in "$root"/rules/*.yml; do
 		echo "  ok    rejected $(basename -- "$fail_fixture"), and said why"
 	fi
 
-	checks=$((checks + 1))
-	stage_a_change
-	if output=$(git commit -F "$pass_fixture" 2>&1); then
-		echo "  ok    committed $(basename -- "$pass_fixture")"
-	else
-		report_failure "$rule: the hooks rejected $(basename -- "$pass_fixture")"
-		indent_output "$output"
-	fi
+	for pass_fixture in "${pass_fixtures[@]}"; do
+		checks=$((checks + 1))
+		stage_a_change
+		if output=$(git commit -F "$pass_fixture" 2>&1); then
+			echo "  ok    committed $(basename -- "$pass_fixture")"
+		else
+			report_failure "$rule: the hooks rejected $(basename -- "$pass_fixture")"
+			indent_output "$output"
+		fi
+	done
 done
 
 echo
