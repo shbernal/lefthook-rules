@@ -49,6 +49,11 @@ commit-msg:
           A commit message is the subject and the prose explaining the change.
           Remove the attribution trailer or footer, then commit again.
 
+          Turning attribution off in the agent may not be enough. Claude Code
+          hides its session trailer through one setting of its own,
+          attribution.sessionUrl, and nothing else covers it:
+          https://github.com/anthropics/claude-code/issues/77830
+
           Bypass once, if you must: git commit --no-verify
         MSG
           exit 1
