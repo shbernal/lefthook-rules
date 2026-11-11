@@ -7,6 +7,19 @@ on:
   pull_request:
 
 jobs:
+  commit-check:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          fetch-depth: 0
+      - uses: commit-check/commit-check-action@v2
+        with:
+          message: true
+          branch: false
+
   test:
     # A rule is shell, and it runs on whatever machine a consumer commits from.
     # The interesting difference between those machines is the shell: Windows
@@ -23,7 +36,7 @@ jobs:
       run:
         shell: bash
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       # The npm package fetches the platform binary in its postinstall step.
       - run: npm install --global lefthook@2
